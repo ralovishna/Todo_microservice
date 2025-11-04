@@ -1,0 +1,11 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: cloud-config-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: file:///C:/Users/BTSPL-KRISHNA M/Idea Projects/todo-microservices/config-repo

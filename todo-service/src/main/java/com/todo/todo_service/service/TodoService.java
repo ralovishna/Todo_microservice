@@ -1,10 +1,16 @@
 package com.todo.todo_service.service;
 
+import com.todo.todo_service.dto.TodoRequest;
+import com.todo.todo_service.dto.TodoResponse;
+import com.todo.todo_service.exception.TodoNotFoundException;
+import com.todo.todo_service.exception.UnauthorizedTodoAccessException;
+import com.todo.todo_service.exception.UserNotFoundException;
 import com.todo.todo_service.model.Todo;
 import com.todo.todo_service.repo.TodoRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class TodoService {
@@ -17,30 +23,69 @@ public class TodoService {
         this.userValidator = userValidator;
     }
 
-    public Todo createTodo(Todo todo) {
-        if (!userValidator.userExists(todo.getUsername())) {
-            throw new RuntimeException("User does not exist");
+    // 🔹 Create Todo
+    public TodoResponse createTodo(TodoRequest request, String username) {
+        if (!userValidator.userExists(username)) {
+            throw new UserNotFoundException("User does not exist: " + username);
         }
-        return todoRepository.save(todo);
+
+        Todo todo = toEntity(request, username);
+        Todo saved = todoRepository.save(todo);
+        return toResponse(saved);
     }
 
-    public List<Todo> getTodosByUser(String username) {
-        return todoRepository.findByUsername(username);
+    // 🔹 Get all todos for user
+    public List<TodoResponse> getTodosByUser(String username) {
+        return todoRepository.findByUsername(username)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
-    public Todo updateTodo(Long id, Todo updated) {
+    // 🔹 Update Todo
+    public TodoResponse updateTodo(Long id, TodoRequest request, String username) {
         Todo todo = todoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Todo not found"));
-        if (!todo.getUsername().equals(updated.getUsername())) {
-            throw new RuntimeException("Unauthorized to edit this todo");
+                .orElseThrow(() -> new TodoNotFoundException("Todo not found with id: " + id));
+
+        if (!todo.getUsername().equals(username)) {
+            throw new UnauthorizedTodoAccessException("You are not allowed to modify this todo");
         }
-        todo.setTitle(updated.getTitle());
-        todo.setDescription(updated.getDescription());
-        todo.setCompleted(updated.isCompleted());
-        return todoRepository.save(todo);
+
+        todo.setTitle(request.getTitle());
+        todo.setDescription(request.getDescription());
+        todo.setCompleted(request.isCompleted());
+        Todo saved = todoRepository.save(todo);
+        return toResponse(saved);
     }
 
+    // 🔹 Delete Todo
     public void deleteTodo(Long id) {
+        if (!todoRepository.existsById(id)) {
+            throw new TodoNotFoundException("Todo not found with id: " + id);
+        }
         todoRepository.deleteById(id);
+    }
+
+    // ✅ Helper: DTO → Entity
+    private Todo toEntity(TodoRequest request, String username) {
+        Todo todo = new Todo();
+        todo.setUsername(username);
+        todo.setTitle(request.getTitle());
+        todo.setDescription(request.getDescription());
+        todo.setCompleted(request.isCompleted());
+        return todo;
+    }
+
+    // ✅ Helper: Entity → DTO
+    private TodoResponse toResponse(Todo todo) {
+        TodoResponse response = new TodoResponse();
+        response.setId(todo.getId());
+        response.setUsername(todo.getUsername());
+        response.setTitle(todo.getTitle());
+        response.setDescription(todo.getDescription());
+        response.setCompleted(todo.isCompleted());
+        response.setCreatedAt(todo.getCreatedAt());
+        response.setUpdatedAt(todo.getUpdatedAt());
+        return response;
     }
 }

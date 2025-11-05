@@ -1,5 +1,8 @@
 package com.todo.auth_service.service;
 
+import com.todo.auth_service.dto.LoginRequest;
+import com.todo.auth_service.dto.RegisterRequest;
+import com.todo.auth_service.dto.UserResponse;
 import com.todo.auth_service.exception.InvalidCredentialsException;
 import com.todo.auth_service.exception.UserAlreadyExistsException;
 import com.todo.auth_service.exception.UserNotFoundException;
@@ -22,22 +25,27 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public String register(User user) {
-        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+    public UserResponse register(RegisterRequest request) {
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new UserAlreadyExistsException("User already exists!");
         }
 
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         userRepository.save(user);
-        return "User registered successfully!";
+
+        return new UserResponse(user.getId(), user.getUsername(), "User registered successfully!");
     }
 
-    public String login(User user) {
-        User existingUser = userRepository.findByUsername(user.getUsername())
+    public String login(LoginRequest request) {
+        User existingUser = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new UserNotFoundException("User not found!"));
-        if (!existingUser.getPassword().equals(user.getPassword())) {
+
+        if (!passwordEncoder.matches(request.getPassword(), existingUser.getPassword())) {
             throw new InvalidCredentialsException("Invalid credentials!");
         }
+
         return jwtUtil.generateToken(existingUser.getUsername());
     }
 

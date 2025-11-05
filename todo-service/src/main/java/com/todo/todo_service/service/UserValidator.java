@@ -17,7 +17,7 @@ public class UserValidator {
     public boolean userExists(String username) {
         try {
             Map<String, Object> response = restTemplate.getForObject(
-                    "http://AUTH-SERVICE/api/auth/exists/{username}",
+                    "http://AUTH-SERVICE/auth/exists/{username}",
                     Map.class,
                     username
             );

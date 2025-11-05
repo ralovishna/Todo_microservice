@@ -58,6 +58,18 @@ public class TodoService {
         return toResponse(saved);
     }
 
+    public TodoResponse toggleTodo(Long id, boolean completed, String username) {
+        Todo todo = todoRepository.findByIdAndUsername(id, username)
+                .orElseThrow(() -> new TodoNotFoundException("Todo not found for user: " + username));
+
+        System.out.println(todoRepository.findById(id).get().isCompleted());
+        System.out.println(completed);
+        todo.setCompleted(!completed);
+        todoRepository.save(todo);
+
+        return toResponse(todo);
+    }
+
     // 🔹 Delete Todo
     public void deleteTodo(Long id) {
         if (!todoRepository.existsById(id)) {

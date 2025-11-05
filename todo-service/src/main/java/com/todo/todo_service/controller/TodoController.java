@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/todos")
@@ -39,6 +40,21 @@ public class TodoController {
             @Valid @RequestBody TodoRequest request) {
         return ResponseEntity.ok(todoService.updateTodo(id, request, username));
     }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<TodoResponse> toggleTodo(
+            @RequestHeader("X-User") String username,
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> request) {
+
+        Boolean completed = request.get("completed");
+        if (completed == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        return ResponseEntity.ok(todoService.toggleTodo(id, completed, username));
+    }
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

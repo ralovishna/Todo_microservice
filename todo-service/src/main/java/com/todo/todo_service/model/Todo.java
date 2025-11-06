@@ -4,10 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 @Entity
@@ -33,7 +30,7 @@ public class Todo {
     private boolean completed = false;
 
     @Column(updatable = false, nullable = false)
-    private OffsetDateTime  createdAt;
+    private OffsetDateTime createdAt;
 
     @Column(nullable = false)
     private OffsetDateTime updatedAt;

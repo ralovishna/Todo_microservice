@@ -1,11 +1,13 @@
 package com.todo.todo_service.controller;
 
 import com.todo.todo_service.generated.api.TodoApi;
-import com.todo.todo_service.generated.model.*;
+import com.todo.todo_service.generated.model.DeleteTodo200Response;
+import com.todo.todo_service.generated.model.TodoRequest;
+import com.todo.todo_service.generated.model.TodoResponse;
+import com.todo.todo_service.generated.model.ToggleTodoRequest;
 import com.todo.todo_service.service.TodoService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 

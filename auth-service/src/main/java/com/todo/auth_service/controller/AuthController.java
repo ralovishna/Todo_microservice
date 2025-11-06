@@ -1,45 +1,53 @@
 package com.todo.auth_service.controller;
 
-import com.todo.auth_service.dto.LoginRequest;
-import com.todo.auth_service.dto.RegisterRequest;
-import com.todo.auth_service.dto.UserResponse;
+import com.todo.auth_service.generated.api.AuthApi;
+import com.todo.auth_service.generated.model.*;
 import com.todo.auth_service.service.AuthService;
-import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/auth")
-public class AuthController {
+public class AuthController implements AuthApi {
 
-    private final AuthService authService;
+    @Autowired
+    private AuthService authService;
 
-    public AuthController(AuthService authService) {
-        this.authService = authService;
+    @Override
+    public ResponseEntity<UserResponse> registerUser(RegisterRequest request) {
+        var dto = new com.todo.auth_service.dto.RegisterRequest();
+        dto.setUsername(request.getUsername());
+        dto.setPassword(request.getPassword());
+
+        var serviceResp = authService.register(dto);
+
+        var genResp = new UserResponse();
+        genResp.setId(serviceResp.getId());
+        genResp.setUsername(serviceResp.getUsername());
+
+        return ResponseEntity.ok(genResp);
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
+    @Override
+    public ResponseEntity<LoginUser200Response> loginUser(LoginRequest request) {
+        var dto = new com.todo.auth_service.dto.LoginRequest();
+        dto.setUsername(request.getUsername());
+        dto.setPassword(request.getPassword());
+
+        String token = authService.login(dto);
+        return ResponseEntity.ok(new LoginUser200Response().token(token));
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@Valid @RequestBody LoginRequest request) {
-        String token = authService.login(request);
-        return ResponseEntity.ok(Map.of("token", token));
-    }
-
-    @GetMapping("/exists/{username}")
-    public ResponseEntity<Map<String, Boolean>> userExists(@PathVariable String username) {
+    @Override
+    public ResponseEntity<UserExists200Response> userExists(String username) {
         boolean exists = authService.userExists(username);
-        return ResponseEntity.ok(Map.of("exists", exists));
+        return ResponseEntity.ok(new UserExists200Response().exists(exists));
     }
 
-    @GetMapping("/validate")
-    public ResponseEntity<Map<String, Boolean>> validate(@RequestHeader("Authorization") String token) {
-        boolean valid = authService.validateToken(token.replace("Bearer ", ""));
-        return ResponseEntity.ok(Map.of("valid", valid));
+    @Override
+    public ResponseEntity<ValidateToken200Response> validateToken(String authorization) {
+        String token = authorization.replace("Bearer ", "");
+        boolean valid = authService.validateToken(token);
+        return ResponseEntity.ok(new ValidateToken200Response().valid(valid));
     }
 }

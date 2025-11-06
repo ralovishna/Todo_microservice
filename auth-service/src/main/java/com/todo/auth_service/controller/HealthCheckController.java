@@ -1,18 +1,17 @@
 package com.todo.auth_service.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class HelloController {
+@Tag(name = "Health Check API", description = "API to check the status of Auth service.")
+public class HealthCheckController {
 
-    @Value("${spring.application.name}")
-    private String appName;
-
-    @GetMapping("/hello")
+    @GetMapping("/health-check")
     public String hello() {
-        return "Hello from " + appName;
+        return "Auth service is up..";
     }
 }
 

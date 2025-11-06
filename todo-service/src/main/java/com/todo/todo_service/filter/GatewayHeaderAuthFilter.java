@@ -21,9 +21,12 @@ public class GatewayHeaderAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws IOException, ServletException {
+        request.setAttribute("X-User","ralo");
 
-        String xUser = request.getHeader("X-User");
-        String xRoles = request.getHeader("X-Roles");
+//        String xUser = request.getHeader("X-User");
+        String xUser = "ralo";
+//        String xRoles = request.getHeader("X-Roles");
+        String xRoles = "ROLE_USER";
 
         if (xUser == null || xUser.isBlank()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

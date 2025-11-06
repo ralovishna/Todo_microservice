@@ -51,6 +51,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Open api specification-->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.8.14</version>
+        </dependency>
+
         <!-- 🔐 Security -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

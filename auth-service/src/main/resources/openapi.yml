@@ -1,0 +1,133 @@
+openapi: 3.0.1
+info:
+  title: Auth Service API
+  version: 1.0.0
+  description: Handles user authentication and token validation.
+servers:
+  - url: http://localhost:8081
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      operationId: registerUser
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /auth/login:
+    post:
+      summary: Login user and get JWT token
+      operationId: loginUser
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Token response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginUser200Response'
+
+  /auth/exists/{username}:
+    get:
+      summary: Check if a username already exists
+      operationId: userExists
+      tags: [auth]
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Username existence result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserExists200Response'
+
+  /auth/validate:
+    get:
+      summary: Validate JWT token
+      operationId: validateToken
+      tags: [auth]
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          example: Bearer <jwt-token>
+      responses:
+        '200':
+          description: Token validation status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateToken200Response'
+
+components:
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+        password:
+          type: string
+          minLength: 6
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+
+    LoginUser200Response:
+      type: object
+      properties:
+        token:
+          type: string
+
+    UserExists200Response:
+      type: object
+      properties:
+        exists:
+          type: boolean
+
+    ValidateToken200Response:
+      type: object
+      properties:
+        valid:
+          type: boolean

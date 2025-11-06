@@ -24,8 +24,6 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
 
-        System.out.println("\n\n\npath : " + path);
-
         // ✅ Skip public endpoints
         if (isPublicRoute(path)) {
             return chain.filter(exchange);
@@ -37,17 +35,19 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         }
 
         String token = authHeader.substring(7);
-        System.out.println("token : " + token);
+
         try {
-            Claims claims = Jwts.parser()
+            // ✅ Modern JJWT syntax
+            Claims claims = Jwts.parserBuilder()
                     .setSigningKey(jwtSecret.getBytes(StandardCharsets.UTF_8))
+                    .build()
                     .parseClaimsJws(token)
                     .getBody();
 
             String username = claims.getSubject();
             String roles = claims.get("roles", String.class);
 
-            // Add headers for downstream services
+            // ✅ Attach headers for downstream services
             ServerWebExchange mutated = exchange.mutate()
                     .request(r -> r.headers(h -> {
                         h.add("X-User", username);
@@ -55,15 +55,18 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
                     }))
                     .build();
 
+            System.out.println("Forwarding headers: " + mutated.getRequest().getHeaders());
+
             return chain.filter(mutated);
 
         } catch (Exception e) {
+            e.printStackTrace();
             return onError(exchange, "Invalid JWT: " + e.getMessage());
         }
     }
 
     private boolean isPublicRoute(String path) {
-        // Match your controller paths
+        // Adjust for your auth routes
         return path.startsWith("/auth") || path.contains("/actuator");
     }
 

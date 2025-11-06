@@ -1,209 +1,370 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import axiosClient from '../../api/axiosClient';
+import { useApiErrorHandler } from '../../utils/handleApiError';
 import toast from 'react-hot-toast';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import TodoModal from '../../components/common/TodoModal';
 import ConfirmModal from '../../components/common/ConfirmModal';
-import TodoCard from '../../components/todos/TodoCard';
-import axiosClient from '../../api/axiosClient';
 import Navbar from '../../components/layout/Navbar';
+
+// Reusable: Date validation
+const useDateFilter = () => {
+	const today = new Date().toISOString().split('T')[0];
+
+	const validateDate = (date, label) => {
+		if (!date || date <= today) return date;
+		toast.error(`${label} cannot be in the future`);
+		return '';
+	};
+
+	return { today, validateDate };
+};
+
+// Reusable: Toggle logic
+const useTodoToggle = (setTodos) => {
+	const [togglingId, setTogglingId] = useState(null);
+	const handleApiError = useApiErrorHandler();
+
+	const toggle = useCallback(
+		async (id, currentStatus) => {
+			if (togglingId === id) return;
+			setTogglingId(id);
+
+			try {
+				await axiosClient.patch(`/api/todos/${id}`, {
+					completed: !currentStatus,
+				});
+
+				setTodos((prev) =>
+					prev.map((t) =>
+						t.id === id ? { ...t, completed: !currentStatus } : t
+					)
+				);
+
+				toast.success(
+					!currentStatus ? 'Todo completed!' : 'Todo marked pending'
+				);
+			} catch (err) {
+				handleApiError(err, null, 'Failed to update todo');
+			} finally {
+				setTogglingId(null);
+			}
+		},
+		[togglingId, setTodos, handleApiError]
+	);
+
+	return { toggle, isToggling: (id) => togglingId === id };
+};
 
 export default function TodoList() {
 	const [todos, setTodos] = useState([]);
-	const [loading, setLoading] = useState(true);
-	const [showModal, setShowModal] = useState(false);
+	const [filter, setFilter] = useState('pending');
+	const [search, setSearch] = useState('');
+	const [startDate, setStartDate] = useState('');
+	const [endDate, setEndDate] = useState('');
+	const [showAddEditModal, setShowAddEditModal] = useState(false);
+	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [todoToEdit, setTodoToEdit] = useState(null);
-	const [showConfirm, setShowConfirm] = useState(false);
-	const [selectedTodo, setSelectedTodo] = useState(null);
-	const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+	const [todoToDelete, setTodoToDelete] = useState(null);
 
-	// -------------------------------------------------
-	// FETCH TODOS (centralized)
-	// -------------------------------------------------
-	const fetchTodos = async () => {
-		setLoading(true);
-		try {
-			const res = await axiosClient.get('/api/todos');
-			setTodos(res.data);
-		} catch {
-			toast.error('Failed to load todos');
-		} finally {
-			setLoading(false);
-		}
-	};
+	const { today, validateDate } = useDateFilter();
+	const { toggle, isToggling } = useTodoToggle(setTodos);
+	const handleApiError = useApiErrorHandler();
 
+	// Fetch Todos
 	useEffect(() => {
+		const fetchTodos = async () => {
+			try {
+				const params = {};
+				if (filter && filter !== 'all') params.status = filter;
+				if (search.trim()) params.search = search.trim();
+				if (startDate) params.startDate = startDate;
+				if (endDate) params.endDate = endDate;
+
+				const { data } = await axiosClient.get('/api/todos', { params });
+				setTodos(data);
+			} catch (err) {
+				handleApiError(err, null, 'Failed to load todos');
+			}
+		};
 		fetchTodos();
+	}, [filter, search, startDate, endDate, handleApiError]);
+
+	// Refresh after mutation
+	const refresh = useCallback(() => {
+		setShowAddEditModal(false);
+		setTodoToEdit(null);
+		setFilter((f) => f); // trigger refetch
 	}, []);
 
-	// -------------------------------------------------
-	// ADD / EDIT / TOGGLE / DELETE
-	// -------------------------------------------------
-	const handleTodoAdded = async () => {
-		await fetchTodos();
-		setShowSuccessOverlay(true);
-
-		import('canvas-confetti').then((confetti) => {
-			confetti.default({
-				particleCount: 70,
-				spread: 80,
-				origin: { y: 0.6 },
-				colors: ['#22C55E', '#3B82F6', '#FACC15'],
-				zIndex: 2000,
-			});
-		});
-
-		setTimeout(() => setShowSuccessOverlay(false), 1500);
-	};
-
-	const toggleTodo = async (id, completed) => {
-		try {
-			await axiosClient.patch(`/api/todos/${id}`, { completed: !completed });
-			await fetchTodos(); // refresh after toggle
-			toast.success('Todo updated!');
-		} catch (err) {
-			console.error('Toggle Todo Error:', err);
-			toast.error('Failed to update todo');
-		}
-	};
-
-	const deleteTodo = async (id) => {
-		try {
-			await axiosClient.delete(`/api/todos/${id}`);
-			await fetchTodos(); // refresh after delete
-			toast.success('Todo deleted');
-		} catch {
-			toast.error('Failed to delete');
-		}
-	};
-
-	const handleConfirmDelete = (todo) => {
-		setSelectedTodo(todo);
-		setShowConfirm(true);
-	};
-
-	const handleDelete = () => {
-		if (selectedTodo) deleteTodo(selectedTodo.id);
-		setShowConfirm(false);
-		setSelectedTodo(null);
-	};
-
-	const openAddModal = () => {
+	// Modal Handlers
+	const openAdd = () => {
 		setTodoToEdit(null);
-		setShowModal(true);
+		setShowAddEditModal(true);
 	};
 
-	const openEditModal = (todo) => {
+	const openEdit = (todo) => {
 		setTodoToEdit(todo);
-		setShowModal(true);
+		setShowAddEditModal(true);
 	};
 
-	const handleSuccess = async () => {
-		await fetchTodos();
+	const openDelete = (todo) => {
+		setTodoToDelete(todo);
+		setShowDeleteModal(true);
 	};
 
-	// -------------------------------------------------
-	// UI
-	// -------------------------------------------------
+	const confirmDelete = async () => {
+		if (!todoToDelete) return;
+
+		try {
+			await axiosClient.delete(`/api/todos/${todoToDelete.id}`);
+			setTodos((prev) => prev.filter((t) => t.id !== todoToDelete.id));
+			toast.success('Todo deleted');
+		} catch (err) {
+			handleApiError(err, null, 'Failed to delete todo');
+		} finally {
+			setShowDeleteModal(false);
+			setTodoToDelete(null);
+		}
+	};
+
 	return (
 		<>
-			<Navbar />
-			<main className='max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
-				{/* Header + Add button */}
-				<div className='flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8'>
-					<h1 className='text-2xl font-bold text-gray-800'>My Todos</h1>
-					<button
-						onClick={openAddModal}
-						className='mt-4 sm:mt-0 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl transition shadow-sm hover:shadow'
-					>
-						<Plus size={18} /> Add Todo
-					</button>
-				</div>
+			<Navbar onSearchChange={setSearch} />
 
-				{/* Loading skeleton */}
-				{loading ? (
-					<div className='space-y-4'>
-						{[...Array(4)].map((_, i) => (
-							<div
-								key={i}
-								className='bg-gray-100 rounded-2xl p-4 animate-pulse'
+			<main className='max-w-4xl mx-auto mt-8 px-4 sm:px-6 lg:px-8'>
+				<section className='bg-white rounded-2xl shadow-xl p-6 sm:p-8'>
+					{/* Header */}
+					<div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8'>
+						<h2 className='text-3xl font-bold text-gray-800'>My Todos</h2>
+						<button
+							onClick={openAdd}
+							className='flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg font-medium'
+						>
+							<Plus size={20} />
+							Add Todo
+						</button>
+					</div>
+
+					{/* Filters */}
+					<div className='flex flex-wrap gap-3 mb-8'>
+						{['pending', 'all', 'completed'].map((f) => (
+							<button
+								key={f}
+								onClick={() => setFilter(f)}
+								className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all ${
+									filter === f
+										? 'bg-blue-600 text-white shadow-md'
+										: 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+								}`}
 							>
-								<div className='h-5 bg-gray-300 rounded w-3/4 mb-2'></div>
-								<div className='h-4 bg-gray-200 rounded w-1/2'></div>
-							</div>
+								{f.charAt(0).toUpperCase() + f.slice(1)}
+							</button>
 						))}
 					</div>
-				) : (
-					<>
-						<AnimatePresence>
-							{showSuccessOverlay && (
-								<motion.div
-									initial={{ opacity: 0, y: 30, scale: 0.9 }}
-									animate={{ opacity: 1, y: 0, scale: 1 }}
-									exit={{ opacity: 0, y: -20, scale: 0.8 }}
-									className='fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm pointer-events-none'
-								>
-									<motion.div
-										initial={{ scale: 0.8 }}
-										animate={{ scale: 1 }}
-										className='flex flex-col items-center text-green-600'
-									>
-										<svg
-											className='w-16 h-16 mb-2'
-											fill='none'
-											stroke='currentColor'
-											viewBox='0 0 24 24'
-										>
-											<path
-												strokeLinecap='round'
-												strokeLinejoin='round'
-												strokeWidth={2}
-												d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
-											/>
-										</svg>
-										<p className='text-xl font-semibold'>Todo Added!</p>
-									</motion.div>
-								</motion.div>
-							)}
-						</AnimatePresence>
 
-						<div className='space-y-4'>
-							{todos.length === 0 ? (
-								<div className='text-center py-12'>
-									<div className='bg-gray-200 border-2 border-dashed rounded-xl w-32 h-32 mx-auto mb-4' />
-									<p className='text-gray-500 italic'>
-										No todos yet — start by adding one!
-									</p>
-								</div>
-							) : (
-								todos.map((todo) => (
-									<TodoCard
-										key={todo.id}
-										todo={todo}
-										onToggle={toggleTodo}
-										onConfirmDelete={handleConfirmDelete}
-										onEdit={openEditModal}
-									/>
-								))
-							)}
-						</div>
-					</>
-				)}
+					{/* Date Filters */}
+					<div className='flex flex-wrap gap-3 mb-8 items-center'>
+						<input
+							type='date'
+							value={startDate}
+							onChange={(e) =>
+								setStartDate(validateDate(e.target.value, 'Start date'))
+							}
+							max={today}
+							className='border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition'
+						/>
+						<input
+							type='date'
+							value={endDate}
+							onChange={(e) =>
+								setEndDate(validateDate(e.target.value, 'End date'))
+							}
+							max={today}
+							className='border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition'
+						/>
+						<button
+							onClick={() => {
+								setStartDate('');
+								setEndDate('');
+								toast.success('Date filters cleared');
+							}}
+							className='px-5 py-2 bg-gray-100 rounded-xl text-sm hover:bg-gray-200 transition font-medium'
+						>
+							Clear Dates
+						</button>
+					</div>
+					<p className='text-xs text-gray-500 -mt-6 mb-6 ml-1'>
+						Only past and present dates are allowed
+					</p>
+
+					{/* Stats Bar */}
+					<div className='mb-6'>
+						{todos.length > 0 && (
+							<p className='text-sm font-medium text-gray-700'>
+								{startDate || endDate ? (
+									<>
+										<span className='text-blue-600'>
+											{startDate
+												? new Date(startDate).toLocaleDateString('en-US', {
+														month: 'short',
+														day: 'numeric',
+												  })
+												: '...'}{' '}
+											–{' '}
+											{endDate
+												? new Date(endDate).toLocaleDateString('en-US', {
+														month: 'short',
+														day: 'numeric',
+												  })
+												: '...'}
+										</span>
+										<span className='mx-2'>•</span>
+									</>
+								) : null}
+								<span className='text-amber-600'>
+									{todos.filter((t) => !t.completed).length} pending
+								</span>
+								<span className='mx-2'>•</span>
+								<span className='text-green-600'>
+									{todos.filter((t) => t.completed).length} completed
+								</span>
+								<span className='mx-2'>•</span>
+								<span className='font-semibold text-gray-800'>
+									{todos.length} total
+								</span>
+							</p>
+						)}
+					</div>
+
+					{/* Todo List */}
+					{todos.length === 0 ? (
+						<EmptyState />
+					) : (
+						<TodoListItems
+							todos={todos}
+							onToggle={toggle}
+							isToggling={isToggling}
+							onEdit={openEdit}
+							onDelete={openDelete}
+						/>
+					)}
+				</section>
 			</main>
 
-			{/* ---------- MODALS ---------- */}
+			{/* Modals */}
 			<TodoModal
-				show={showModal}
-				onClose={() => setShowModal(false)}
-				onSuccess={handleSuccess}
+				show={showAddEditModal}
+				onClose={() => {
+					setShowAddEditModal(false);
+					setTodoToEdit(null);
+				}}
+				onSuccess={refresh}
 				todoToEdit={todoToEdit}
 			/>
+
 			<ConfirmModal
-				show={showConfirm}
-				todo={selectedTodo}
-				onCancel={() => setShowConfirm(false)}
-				onConfirm={handleDelete}
+				show={showDeleteModal}
+				todo={todoToDelete}
+				onCancel={() => {
+					setShowDeleteModal(false);
+					setTodoToDelete(null);
+				}}
+				onConfirm={confirmDelete}
 			/>
 		</>
 	);
 }
+
+// Sub-components
+const EmptyState = () => (
+	<div className='text-center py-16'>
+		<div className='bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4'>
+			<span className='text-3xl'>Empty</span>
+		</div>
+		<p className='text-gray-500 text-lg'>No todos found.</p>
+		<p className='text-sm text-gray-400 mt-1'>
+			Create your first todo to get started!
+		</p>
+	</div>
+);
+
+const TodoListItems = ({ todos, onToggle, isToggling, onEdit, onDelete }) => (
+	<ul className='space-y-4'>
+		{todos.map((todo) => (
+			<li
+				key={todo.id}
+				className={`group flex items-start gap-4 p-5 rounded-2xl border transition-all ${
+					todo.completed
+						? 'bg-green-50 border-green-200'
+						: 'bg-gray-50 border-gray-200 hover:shadow-lg hover:border-gray-300'
+				}`}
+			>
+				{/* Toggle */}
+				<label className='mt-1 cursor-pointer'>
+					<input
+						type='checkbox'
+						checked={todo.completed}
+						onChange={() => onToggle(todo.id, todo.completed)}
+						disabled={isToggling(todo.id)}
+						className='w-5 h-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300 cursor-pointer transition'
+					/>
+				</label>
+
+				{/* Content */}
+				<div className='flex-1 min-w-0'>
+					<p
+						className={`font-semibold text-lg transition-all ${
+							todo.completed ? 'line-through text-gray-500' : 'text-gray-800'
+						}`}
+					>
+						{todo.title}
+					</p>
+					{todo.description && (
+						<p className='text-sm text-gray-600 mt-1.5 break-words whitespace-pre-wrap'>
+							{todo.description}
+						</p>
+					)}
+					<p className='text-xs text-gray-400 mt-2 flex items-center gap-1'>
+						<span>Calendar</span>{' '}
+						{new Date(todo.createdAt).toLocaleDateString('en-US', {
+							weekday: 'short',
+							month: 'short',
+							day: 'numeric',
+						})}
+					</p>
+				</div>
+
+				{/* Status + Actions */}
+				<div className='flex items-center gap-3'>
+					<span
+						className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+							todo.completed
+								? 'bg-green-100 text-green-700'
+								: 'bg-amber-100 text-amber-700'
+						}`}
+					>
+						{todo.completed ? 'Completed' : 'Pending'}
+					</span>
+
+					<div className='flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity'>
+						<button
+							onClick={() => onEdit(todo)}
+							className='p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition'
+							title='Edit'
+						>
+							<Edit size={18} />
+						</button>
+						<button
+							onClick={() => onDelete(todo)}
+							className='p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition'
+							title='Delete'
+						>
+							<Trash2 size={18} />
+						</button>
+					</div>
+				</div>
+			</li>
+		))}
+	</ul>
+);

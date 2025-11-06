@@ -1,152 +1,127 @@
-// components/todos/TodoCard.jsx
-import { motion } from 'framer-motion';
-import {
-	Trash2,
-	CheckCircle2,
-	Circle,
-	Clock,
-	AlertTriangle,
-	Edit3,
-} from 'lucide-react';
-import {
-	format,
-	parseISO,
-	formatDistanceToNow,
-	differenceInDays,
-} from 'date-fns';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axiosClient from '../../api/axiosClient';
+import { useApiErrorHandler } from '../utils/useApiErrorHandler';
+import toast from 'react-hot-toast';
 
-export default function TodoCard({ todo, onToggle, onConfirmDelete, onEdit }) {
-	const created = parseISO(todo.createdAt);
-	const daysOld = differenceInDays(new Date(), created);
-	const isCompleted = todo.completed;
-	const isUrgent = !isCompleted && daysOld > 3;
+export default function TodoList() {
+	const [todos, setTodos] = useState([]);
+	const [filter, setFilter] = useState('pending'); // 👈 default status
+	const [search, setSearch] = useState('');
+	const [startDate, setStartDate] = useState('');
+	const [endDate, setEndDate] = useState('');
+	const handleApiError = useApiErrorHandler();
 
-	const getAgeBadge = () => {
-		if (isCompleted) return null;
-		let bg = '',
-			text = '',
-			icon = null;
-		if (daysOld < 1) {
-			bg = 'bg-green-100 text-green-700';
-			text = 'Fresh';
-		} else if (daysOld <= 3) {
-			bg = 'bg-yellow-100 text-yellow-700';
-			text = `${daysOld}d`;
-		} else if (daysOld <= 7) {
-			bg = 'bg-orange-100 text-orange-700';
-			text = `${daysOld}d`;
-			icon = <AlertTriangle className='w-3 h-3' />;
-		} else {
-			bg = 'bg-red-100 text-red-700';
-			text = `${daysOld}d`;
-			icon = <AlertTriangle className='w-3 h-3' />;
-		}
+	// 🔄 Fetch Todos whenever filters change
+	useEffect(() => {
+		const fetchTodos = async () => {
+			try {
+				const params = {};
+				if (filter && filter !== 'all') params.status = filter;
+				if (search.trim()) params.search = search.trim();
+				if (startDate) params.startDate = startDate;
+				if (endDate) params.endDate = endDate;
 
-		return (
-			<span
-				className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${bg}`}
-			>
-				{icon}
-				{text}
-			</span>
-		);
-	};
-
-	const [showTooltip, setShowTooltip] = useState(false);
-	const fullDate = format(created, "PPP 'at' p");
+				const res = await axiosClient.get('/todos', { params });
+				setTodos(res.data);
+			} catch (err) {
+				handleApiError(err, null, 'Failed to load todos');
+			}
+		};
+		fetchTodos();
+	}, [filter, search, startDate, endDate]);
 
 	return (
-		<motion.div
-			layout
-			initial={{ opacity: 0, y: 20, scale: 0.95 }}
-			animate={{ opacity: 1, y: 0, scale: 1 }}
-			exit={{ opacity: 0, scale: 0.9 }}
-			transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-			className={`
-        group relative p-5 rounded-2xl bg-white border
-        ${isUrgent ? 'border-red-200' : 'border-gray-200'}
-        shadow-sm hover:shadow-xl transition-all duration-300
-        flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4
-      `}
-		>
-			{/* Checkbox + Content */}
-			<div
-				className='flex items-start gap-3 cursor-pointer select-none flex-1'
-				onClick={() => onToggle(todo.id, !todo.completed)}
-				role='button'
-			>
-				{todo.completed ? (
-					<CheckCircle2 className='w-6 h-6 text-green-500 flex-shrink-0 mt-0.5' />
-				) : (
-					<Circle
-						className={`w-6 h-6 flex-shrink-0 mt-0.5 ${
-							isUrgent ? 'text-red-500' : 'text-gray-400'
-						}`}
-					/>
-				)}
+		<div className='max-w-2xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-xl'>
+			<h2 className='text-2xl font-semibold mb-4 text-gray-800'>My Todos</h2>
 
-				<div className='flex-1 min-w-0'>
-					<h3
-						className={`font-semibold text-base truncate ${
-							todo.completed ? 'line-through text-gray-400' : 'text-gray-900'
+			{/* 🧭 Filters */}
+			<div className='flex flex-wrap gap-3 mb-5'>
+				{['pending', 'all', 'completed'].map((f) => (
+					<button
+						key={f}
+						onClick={() => setFilter(f)}
+						className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+							filter === f
+								? 'bg-blue-600 text-white'
+								: 'bg-gray-100 hover:bg-gray-200 text-gray-800'
 						}`}
 					>
-						{todo.title}
-					</h3>
-					{todo.description && (
-						<p className='text-sm text-gray-600 mt-1 line-clamp-2'>
-							{todo.description}
-						</p>
-					)}
+						{f.charAt(0).toUpperCase() + f.slice(1)}
+					</button>
+				))}
+			</div>
 
-					<div className='flex flex-wrap items-center gap-2 mt-3 text-xs text-gray-500'>
-						<div className='flex items-center gap-1'>
-							<Clock className='w-3.5 h-3.5' />
-							<span
-								className='relative'
-								onMouseEnter={() => setShowTooltip(true)}
-								onMouseLeave={() => setShowTooltip(false)}
-							>
-								{formatDistanceToNow(created, { addSuffix: true })}
-								{showTooltip && (
-									<div className='absolute bottom-full left-0 mb-2 w-max max-w-xs px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg z-10'>
-										{fullDate}
-									</div>
+			{/* 🔍 Search & Date Range */}
+			<div className='flex flex-wrap gap-3 mb-6 items-center'>
+				<input
+					type='text'
+					placeholder='Search by title...'
+					value={search}
+					onChange={(e) => setSearch(e.target.value)}
+					className='flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400'
+				/>
+				<input
+					type='date'
+					value={startDate}
+					onChange={(e) => setStartDate(e.target.value)}
+					className='border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400'
+				/>
+				<input
+					type='date'
+					value={endDate}
+					onChange={(e) => setEndDate(e.target.value)}
+					className='border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400'
+				/>
+				<button
+					onClick={() => {
+						setSearch('');
+						setStartDate('');
+						setEndDate('');
+						toast('Filters cleared');
+					}}
+					className='px-4 py-2 bg-gray-200 rounded-lg text-sm hover:bg-gray-300 transition'
+				>
+					Clear
+				</button>
+			</div>
+
+			{/* 📋 Todos List */}
+			{todos.length === 0 ? (
+				<p className='text-gray-500 text-center py-4'>No todos found.</p>
+			) : (
+				<ul className='space-y-2'>
+					{todos.map((todo) => (
+						<li
+							key={todo.id}
+							className={`flex justify-between items-center p-3 rounded-md ${
+								todo.completed ? 'bg-green-50' : 'bg-gray-50'
+							}`}
+						>
+							<div>
+								<p
+									className={`font-medium ${
+										todo.completed ? 'line-through text-gray-500' : ''
+									}`}
+								>
+									{todo.title}
+								</p>
+								{todo.description && (
+									<p className='text-sm text-gray-500'>{todo.description}</p>
 								)}
+							</div>
+							<span
+								className={`text-xs px-2 py-1 rounded ${
+									todo.completed
+										? 'bg-green-100 text-green-700'
+										: 'bg-yellow-100 text-yellow-700'
+								}`}
+							>
+								{todo.completed ? 'Done' : 'Pending'}
 							</span>
-						</div>
-						{getAgeBadge()}
-					</div>
-				</div>
-			</div>
-
-			{/* Action Buttons */}
-			<div className='flex items-center gap-2 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity'>
-				{/* Edit */}
-				<button
-					onClick={(e) => {
-						e.stopPropagation();
-						onEdit(todo);
-					}}
-					className='p-2 rounded-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition'
-					aria-label='Edit todo'
-				>
-					<Edit3 className='w-5 h-5' />
-				</button>
-
-				{/* Delete */}
-				<button
-					onClick={(e) => {
-						e.stopPropagation();
-						onConfirmDelete(todo);
-					}}
-					className='p-2 rounded-full text-red-500 hover:text-red-700 hover:bg-red-50 transition'
-					aria-label='Delete todo'
-				>
-					<Trash2 className='w-5 h-5' />
-				</button>
-			</div>
-		</motion.div>
+						</li>
+					))}
+				</ul>
+			)}
+		</div>
 	);
 }

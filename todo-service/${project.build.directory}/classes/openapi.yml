@@ -1,0 +1,219 @@
+openapi: 3.0.1
+info:
+  title: Todo Service API
+  version: 1.1.0
+  description: API for managing and filtering user-specific todos in the Todo microservice.
+
+servers:
+  - url: http://localhost:8082
+
+paths:
+  /todos:
+    post:
+      summary: Create a new todo
+      operationId: createTodo
+      tags: [ todo ]
+      parameters:
+        - name: X-User
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Username of the authenticated user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoRequest'
+      responses:
+        '200':
+          description: Todo created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+
+    get:
+      summary: Get todos for the user (with filtering, search, and date range)
+      operationId: getFilteredTodos
+      tags: [ todo ]
+      parameters:
+        - name: X-User
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Username of the authenticated user
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ all, pending, completed ]
+            default: all
+          description: Filter todos by completion status.
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter todos by partial match in the title (case-insensitive).
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Start date (inclusive) to filter todos created after or on this date.
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: End date (inclusive) to filter todos created before or on this date.
+      responses:
+        '200':
+          description: Filtered list of todos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TodoResponse'
+
+  /todos/{id}:
+    put:
+      summary: Update a todo
+      operationId: updateTodo
+      tags: [ todo ]
+      parameters:
+        - name: X-User
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoRequest'
+      responses:
+        '200':
+          description: Updated todo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+
+    patch:
+      summary: Toggle todo completion status
+      operationId: toggleTodo
+      tags: [ todo ]
+      parameters:
+        - name: X-User
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToggleTodoRequest'
+      responses:
+        '200':
+          description: Todo updated with new completion status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+
+    delete:
+      summary: Delete a todo
+      operationId: deleteTodo
+      tags: [ todo ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Todo deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteTodo200Response'
+
+components:
+  schemas:
+    TodoRequest:
+      type: object
+      required: [ title ]
+      properties:
+        title:
+          type: string
+          description: The title of the todo item.
+          minLength: 3
+          maxLength: 100
+          pattern: '^[A-Za-z0-9 _.,!?"''-]*$'
+          example: "Buy groceries"
+        description:
+          type: string
+          description: A detailed description of the todo.
+          minLength: 0
+          maxLength: 300
+          example: "Buy milk, eggs, and bread from the supermarket."
+        completed:
+          type: boolean
+          default: false
+
+    TodoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        completed:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ToggleTodoRequest:
+      type: object
+      required: [ completed ]
+      properties:
+        completed:
+          type: boolean
+          description: The new completion status of the todo.
+
+    DeleteTodo200Response:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Todo deleted successfully

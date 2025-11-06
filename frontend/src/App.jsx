@@ -3,6 +3,7 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import TodoList from './pages/todos/TodoList';
 import { useAuth } from './context/AuthContext';
+import Navbar from './components/layout/Navbar';
 
 function ProtectedRoute({ children }) {
 	const { auth } = useAuth();

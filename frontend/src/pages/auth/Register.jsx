@@ -1,23 +1,35 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
 import axiosClient from '../../api/axiosClient';
+import { useApiErrorHandler } from '../../utils/handleApiError';
+import toast from 'react-hot-toast';
 
 export default function Register() {
 	const [form, setForm] = useState({ username: '', password: '' });
-	const navigate = useNavigate();
+	const [errors, setErrors] = useState({});
+	const [loading, setLoading] = useState(false);
 
-	const handleChange = (e) =>
+	const navigate = useNavigate();
+	const handleApiError = useApiErrorHandler();
+
+	const handleChange = (e) => {
 		setForm({ ...form, [e.target.name]: e.target.value });
+		setErrors({ ...errors, [e.target.name]: '' });
+	};
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+		setErrors({});
+		setLoading(true);
+
 		try {
 			await axiosClient.post('/auth/register', form);
 			toast.success('Account created successfully!');
 			navigate('/login');
 		} catch (err) {
-			toast.error(err.response?.data?.message || 'Registration failed');
+			handleApiError(err, setErrors, 'Registration failed — please try again.');
+		} finally {
+			setLoading(false);
 		}
 	};
 
@@ -29,31 +41,48 @@ export default function Register() {
 			>
 				<h1 className='text-2xl font-bold text-center'>Register</h1>
 
-				<input
-					type='text'
-					name='username'
-					placeholder='Username'
-					value={form.username}
-					onChange={handleChange}
-					required
-					className='w-full border rounded-lg p-2 focus:ring-2 focus:ring-green-400'
-				/>
+				<div>
+					<input
+						type='text'
+						name='username'
+						placeholder='Username'
+						value={form.username}
+						onChange={handleChange}
+						required
+						className={`w-full border rounded-lg p-2 focus:ring-2 ${
+							errors.username ? 'border-red-500' : 'focus:ring-green-400'
+						}`}
+					/>
+					{errors.username && (
+						<p className='text-red-500 text-xs mt-1'>{errors.username}</p>
+					)}
+				</div>
 
-				<input
-					type='password'
-					name='password'
-					placeholder='Password'
-					value={form.password}
-					onChange={handleChange}
-					required
-					className='w-full border rounded-lg p-2 focus:ring-2 focus:ring-green-400'
-				/>
+				<div>
+					<input
+						type='password'
+						name='password'
+						placeholder='Password'
+						value={form.password}
+						onChange={handleChange}
+						required
+						className={`w-full border rounded-lg p-2 focus:ring-2 ${
+							errors.password ? 'border-red-500' : 'focus:ring-green-400'
+						}`}
+					/>
+					{errors.password && (
+						<p className='text-red-500 text-xs mt-1'>{errors.password}</p>
+					)}
+				</div>
 
 				<button
 					type='submit'
-					className='w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition'
+					disabled={loading}
+					className={`w-full ${
+						loading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
+					} text-white py-2 rounded-lg transition`}
 				>
-					Register
+					{loading ? 'Registering...' : 'Register'}
 				</button>
 
 				<p className='text-sm text-center'>

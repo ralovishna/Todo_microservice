@@ -2,15 +2,22 @@ openapi: 3.0.1
 info:
   title: Auth Service API
   version: 1.0.0
-  description: Handles user authentication and token validation.
+  description: >
+    Handles user authentication, registration, and token validation for the Todo microservice ecosystem.
+
 servers:
   - url: http://localhost:8081
+
+tags:
+  - name: auth
+    description: Endpoints for user authentication and validation.
+
 paths:
   /auth/register:
     post:
       summary: Register a new user
       operationId: registerUser
-      tags: [auth]
+      tags: [ auth ]
       requestBody:
         required: true
         content:
@@ -24,12 +31,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Username already exists or invalid input
 
   /auth/login:
     post:
-      summary: Login user and get JWT token
+      summary: Login a user and receive a JWT token
       operationId: loginUser
-      tags: [auth]
+      tags: [ auth ]
       requestBody:
         required: true
         content:
@@ -38,23 +47,28 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Token response
+          description: JWT token generated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginUser200Response'
+        '401':
+          description: Invalid username or password
 
   /auth/exists/{username}:
     get:
       summary: Check if a username already exists
       operationId: userExists
-      tags: [auth]
+      tags: [ auth ]
       parameters:
         - name: username
           in: path
           required: true
           schema:
             type: string
+            minLength: 3
+            maxLength: 30
+          description: Username to check for existence
       responses:
         '200':
           description: Username existence result
@@ -65,45 +79,60 @@ paths:
 
   /auth/validate:
     get:
-      summary: Validate JWT token
+      summary: Validate a JWT token
       operationId: validateToken
-      tags: [auth]
+      tags: [ auth ]
       parameters:
         - name: Authorization
           in: header
           required: true
           schema:
             type: string
-          example: Bearer <jwt-token>
+          example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          description: Bearer token to validate
       responses:
         '200':
-          description: Token validation status
+          description: Token validation result
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidateToken200Response'
+        '401':
+          description: Invalid or expired token
 
 components:
   schemas:
     RegisterRequest:
       type: object
-      required: [username, password]
+      required: [ username, password ]
+      properties:
+        username:
+          type: string
+          description: Unique username for the new account.
+          minLength: 3
+          maxLength: 30
+          pattern: '^[a-zA-Z0-9._-]+$'
+          example: "john_doe"
+        password:
+          type: string
+          description: Password (minimum 6 characters, must contain a number and a letter).
+          minLength: 6
+          maxLength: 64
+          pattern: '^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{6,}$'
+          example: "pass1234"
+
+    LoginRequest:
+      type: object
+      required: [ username, password ]
       properties:
         username:
           type: string
           minLength: 3
+          example: "john_doe"
         password:
           type: string
           minLength: 6
-
-    LoginRequest:
-      type: object
-      required: [username, password]
-      properties:
-        username:
-          type: string
-        password:
-          type: string
+          example: "pass1234"
 
     UserResponse:
       type: object
@@ -111,23 +140,32 @@ components:
         id:
           type: integer
           format: int64
+          example: 1
         username:
           type: string
+          example: "john_doe"
+        message:
+          type: string
+          example: "User registered successfully!"
 
     LoginUser200Response:
       type: object
       properties:
         token:
           type: string
+          description: JWT authentication token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
     UserExists200Response:
       type: object
       properties:
         exists:
           type: boolean
+          example: true
 
     ValidateToken200Response:
       type: object
       properties:
         valid:
           type: boolean
+          example: true

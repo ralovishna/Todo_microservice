@@ -1,15 +1,16 @@
-// src/context/AuthContext.js
 import { createContext, useContext, useState, useEffect } from 'react';
 import { setToken, removeToken, getToken } from '../utils/storage';
-import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
+import { useLogout } from '../utils/useLogout';
+import axiosClient from '../api/axiosClient';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
 	const navigate = useNavigate();
 
-	// Initialize auth from localStorage
 	const [auth, setAuth] = useState(() => {
 		const token = getToken();
 		let user = null;
@@ -18,22 +19,37 @@ export const AuthProvider = ({ children }) => {
 			try {
 				const decoded = jwtDecode(token);
 				user = decoded.sub || decoded.username || null;
-				console.log(user);
 			} catch (e) {
-				console.error('Invalid JWT in localStorage:', e);
+				console.error('Invalid JWT found:', e);
+				useLogout(true); // 🔹 soft logout — clean but no hard reload
 			}
 		}
-
 		return { token, user };
 	});
 
-	// Sync token changes to localStorage
+	// ✅ Validate token once at startup (soft logout on failure)
+	useEffect(() => {
+		const validateToken = async () => {
+			if (!auth.token) return;
+			try {
+				await axiosClient.get('/auth/validate');
+			} catch (err) {
+				console.warn('Token invalid or expired. Logging out softly.');
+				toast.error('Your session expired. Please log in again.');
+				useLogout(true); // 🔹 clears token + updates state, no reload
+				setAuth({ token: null, user: null });
+			}
+		};
+		validateToken();
+	}, []);
+
+	// ✅ Sync token to localStorage whenever it changes
 	useEffect(() => {
 		if (auth.token) setToken(auth.token);
 		else removeToken();
 	}, [auth.token]);
 
-	// Login: decode and set user
+	// ✅ Login handler
 	const login = (token) => {
 		try {
 			const decoded = jwtDecode(token);
@@ -41,16 +57,17 @@ export const AuthProvider = ({ children }) => {
 			setAuth({ token, user });
 			setToken(token);
 			navigate('/todos');
-		} catch (error) {
-			console.error('Failed to decode JWT:', error);
+		} catch (err) {
+			console.error('Failed to decode JWT:', err);
+			toast.error('Invalid token received. Please try again.');
 		}
 	};
 
-	// Logout: clear user + token
-	const logout = () => {
+	// ✅ Logout handler
+	const logout = (soft = false) => {
 		setAuth({ token: null, user: null });
-		removeToken();
-		navigate('/login');
+		toast.success('Logged out successfully');
+		useLogout(soft);
 	};
 
 	return (

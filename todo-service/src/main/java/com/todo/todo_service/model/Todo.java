@@ -8,6 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "todos")
@@ -31,18 +32,27 @@ public class Todo {
 
     private boolean completed = false;
 
-    @CreationTimestamp
     @Column(updatable = false, nullable = false)
-    private LocalDateTime createdAt;
+    private OffsetDateTime  createdAt;
 
-    @UpdateTimestamp
     @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     public Todo(String username, String title, String description, boolean completed) {
         this.username = username;
         this.title = title;
         this.description = description;
         this.completed = completed;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = OffsetDateTime.now();
     }
 }

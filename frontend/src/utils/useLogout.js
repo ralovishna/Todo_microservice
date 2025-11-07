@@ -6,10 +6,10 @@ import toast from 'react-hot-toast';
 
 export const useLogout = () => {
 	const navigate = useNavigate();
-	const { logout } = useAuth(); // ✅ context is now available
+	const { logout } = useAuth();
 
 	const handleLogout = (soft = false) => {
-		console.log('🔒 useLogout triggered | soft =', soft);
+		// console.log('🔒 useLogout triggered | soft =', soft);
 		removeToken();
 		logout(true); // call the context’s logout function
 		if (!soft) {

@@ -67,12 +67,19 @@ export default function TodoList() {
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [todoToEdit, setTodoToEdit] = useState(null);
 	const [todoToDelete, setTodoToDelete] = useState(null);
+	const [refreshKey, setRefreshKey] = useState(0);
 
 	const { today, validateDate } = useDateFilter();
 	const { toggle, isToggling } = useTodoToggle(setTodos);
 	const handleApiError = useApiErrorHandler();
 
-	// Fetch Todos
+	// Refresh after mutation
+	const refresh = useCallback(() => {
+		setShowAddEditModal(false);
+		setTodoToEdit(null);
+		setRefreshKey((k) => k + 1);
+	}, []);
+
 	useEffect(() => {
 		const fetchTodos = async () => {
 			try {
@@ -88,15 +95,9 @@ export default function TodoList() {
 				handleApiError(err, null, 'Failed to load todos');
 			}
 		};
-		fetchTodos();
-	}, [filter, search, startDate, endDate, handleApiError]);
 
-	// Refresh after mutation
-	const refresh = useCallback(() => {
-		setShowAddEditModal(false);
-		setTodoToEdit(null);
-		setFilter((f) => f); // trigger refetch
-	}, []);
+		fetchTodos();
+	}, [filter, search, startDate, endDate, refreshKey]);
 
 	// Modal Handlers
 	const openAdd = () => {

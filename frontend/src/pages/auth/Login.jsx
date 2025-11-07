@@ -4,11 +4,14 @@ import axiosClient from '../../api/axiosClient';
 import { useAuth } from '../../context/AuthContext';
 import { useApiErrorHandler } from '../../utils/handleApiError';
 import toast from 'react-hot-toast';
+import { API } from '../../api/endPoints';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
 	const [form, setForm] = useState({ username: '', password: '' });
 	const [errors, setErrors] = useState({});
 	const [loading, setLoading] = useState(false);
+	const [showPassword, setShowPassword] = useState(false);
 
 	const navigate = useNavigate();
 	const { login } = useAuth();
@@ -25,10 +28,9 @@ export default function Login() {
 		setLoading(true);
 
 		try {
-			const res = await axiosClient.post('/auth/login', form);
-			login(res.data.token); // ✅ decode user from JWT inside AuthContext
+			const res = await axiosClient.post(API.AUTH.LOGIN, form);
+			login(res.data.token);
 			toast.success('Logged in successfully!');
-			navigate('/todos');
 		} catch (err) {
 			handleApiError(
 				err,
@@ -46,8 +48,9 @@ export default function Login() {
 				onSubmit={handleSubmit}
 				className='bg-white shadow-lg rounded-2xl p-8 w-96 space-y-5'
 			>
-				<h1 className='text-2xl font-bold text-center'>Login</h1>
+				<h1 className='text-2xl font-bold text-center text-gray-800'>Login</h1>
 
+				{/* Username Field */}
 				<div>
 					<input
 						type='text'
@@ -65,23 +68,32 @@ export default function Login() {
 					)}
 				</div>
 
-				<div>
+				{/* Password Field */}
+				<div className='relative'>
 					<input
-						type='password'
+						type={showPassword ? 'text' : 'password'}
 						name='password'
 						placeholder='Password'
 						value={form.password}
 						onChange={handleChange}
 						required
-						className={`w-full border rounded-lg p-2 focus:ring-2 ${
+						className={`w-full border rounded-lg p-2 pr-10 focus:ring-2 ${
 							errors.password ? 'border-red-500' : 'focus:ring-blue-400'
 						}`}
 					/>
+					<button
+						type='button'
+						onClick={() => setShowPassword((prev) => !prev)}
+						className='absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700'
+					>
+						{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+					</button>
 					{errors.password && (
 						<p className='text-red-500 text-xs mt-1'>{errors.password}</p>
 					)}
 				</div>
 
+				{/* Submit */}
 				<button
 					type='submit'
 					disabled={loading}

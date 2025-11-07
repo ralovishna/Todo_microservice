@@ -6,6 +6,7 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import TodoModal from '../../components/common/TodoModal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import Navbar from '../../components/layout/Navbar';
+import { API } from '../../api/endPoints';
 
 // Reusable: Date validation
 const useDateFilter = () => {
@@ -31,7 +32,7 @@ const useTodoToggle = (setTodos) => {
 			setTogglingId(id);
 
 			try {
-				await axiosClient.patch(`/api/todos/${id}`, {
+				await axiosClient.patch(`${API.TODOS.BASE}/${id}`, {
 					completed: !currentStatus,
 				});
 
@@ -81,7 +82,7 @@ export default function TodoList() {
 				if (startDate) params.startDate = startDate;
 				if (endDate) params.endDate = endDate;
 
-				const { data } = await axiosClient.get('/api/todos', { params });
+				const { data } = await axiosClient.get(API.TODOS.BASE, { params });
 				setTodos(data);
 			} catch (err) {
 				handleApiError(err, null, 'Failed to load todos');
@@ -117,7 +118,7 @@ export default function TodoList() {
 		if (!todoToDelete) return;
 
 		try {
-			await axiosClient.delete(`/api/todos/${todoToDelete.id}`);
+			await axiosClient.delete(`${API.TODOS.BASE}/${todoToDelete.id}`);
 			setTodos((prev) => prev.filter((t) => t.id !== todoToDelete.id));
 			toast.success('Todo deleted');
 		} catch (err) {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { useApiErrorHandler } from '../utils/useApiErrorHandler';
 import toast from 'react-hot-toast';
+import { API } from '../../api/endPoints';
 
 export default function TodoList() {
 	const [todos, setTodos] = useState([]);
@@ -21,7 +22,7 @@ export default function TodoList() {
 				if (startDate) params.startDate = startDate;
 				if (endDate) params.endDate = endDate;
 
-				const res = await axiosClient.get('/todos', { params });
+				const res = await axiosClient.get(API.TODOS.BASE, { params });
 				setTodos(res.data);
 			} catch (err) {
 				handleApiError(err, null, 'Failed to load todos');

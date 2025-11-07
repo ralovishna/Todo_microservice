@@ -1,14 +1,14 @@
-// src/api/axiosClient.js
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { getToken } from '../utils/storage';
-import { useLogout } from '../utils/useLogout'; // assuming this triggers context logout etc.
+import { logoutHelper } from '../utils/logoutHelper';
 
 const axiosClient = axios.create({
-	baseURL: 'http://localhost:8080', // gateway or backend base
+	baseURL: 'http://localhost:8080', // ✅ use your correct backend port + prefix
+	withCredentials: false,
 });
 
-// ✅ Attach token to every request
+// ✅ Attach token
 axiosClient.interceptors.request.use((config) => {
 	const token = getToken();
 	if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -17,20 +17,17 @@ axiosClient.interceptors.request.use((config) => {
 
 // ✅ Global error handling
 axiosClient.interceptors.response.use(
-	(response) => response,
+	(res) => res,
 	(error) => {
 		const status = error.response?.status;
 		const url = error.config?.url || '';
 
-		// 🧩 Ignore 401s from /auth/login — handled by login page itself
 		if (status === 401 && !url.includes('/auth/login')) {
 			toast.error('Session expired. Please log in again.');
-			useLogout(); // ✅ global session handling only for non-login routes
+			logoutHelper();
 		} else if (status >= 500) {
 			toast.error('Server error. Please try again later.');
 		}
-
-		// ⚠️ Let component-level code handle the error too
 		return Promise.reject(error);
 	}
 );

@@ -1,48 +1,10 @@
-import { useState } from 'react';
-import toast from 'react-hot-toast';
-import confetti from 'canvas-confetti';
-import axiosClient from '../../api/axiosClient';
-import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2 } from 'lucide-react';
+import { useTodoForm } from '../../hooks/useTodoForm';
 
 export default function TodoForm({ onTodoAdded }) {
-	const [form, setForm] = useState({ title: '', description: '' });
-	const [loading, setLoading] = useState(false);
-	const [showSuccess, setShowSuccess] = useState(false);
-	const { auth } = useAuth();
-
-	const handleChange = (e) =>
-		setForm({ ...form, [e.target.name]: e.target.value });
-
-	const handleSubmit = async (e) => {
-		e.preventDefault();
-		if (!form.title.trim()) return toast.error('Title is required');
-
-		try {
-			setLoading(true);
-			await axiosClient.post('/api/todos', form);
-			toast.success('Todo added successfully!');
-			setForm({ title: '', description: '' });
-			onTodoAdded();
-
-			// ✅ Show success animation
-			setShowSuccess(true);
-			confetti({
-				particleCount: 60,
-				spread: 70,
-				startVelocity: 25,
-				origin: { y: 0.6 },
-				colors: ['#22C55E', '#3B82F6', '#FACC15'],
-			});
-
-			setTimeout(() => setShowSuccess(false), 1500);
-		} catch (err) {
-			toast.error('Failed to add todo');
-		} finally {
-			setLoading(false);
-		}
-	};
+	const { form, setForm, loading, success, handleChange, handleSubmit } =
+		useTodoForm(onTodoAdded, false); // false = add mode
 
 	return (
 		<div className='relative'>
@@ -64,20 +26,22 @@ export default function TodoForm({ onTodoAdded }) {
 					value={form.description}
 					onChange={handleChange}
 					rows={2}
-					className='border rounded-lg p-2 focus:ring-2 focus:ring-blue-400 outline-none'
+					className='border rounded-lg p-2 focus:ring-2 focus:ring-blue-400 outline-none resize-none'
 				/>
-				<button
+
+				<motion.button
+					whileTap={{ scale: 0.97 }}
 					disabled={loading}
 					type='submit'
 					className='bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition disabled:opacity-60'
 				>
 					{loading ? 'Adding...' : 'Add Todo'}
-				</button>
+				</motion.button>
 			</form>
 
 			{/* ✅ Success Floating Animation */}
 			<AnimatePresence>
-				{showSuccess && (
+				{success && (
 					<motion.div
 						initial={{ opacity: 0, y: 40, scale: 0.9 }}
 						animate={{ opacity: 1, y: 0, scale: 1 }}

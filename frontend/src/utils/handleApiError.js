@@ -1,6 +1,5 @@
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-// import { useLogout } from './useLogout';
 
 /**
  * Unified API error handler for backend responses.
@@ -17,16 +16,17 @@ export function useApiErrorHandler() {
 		setErrors,
 		fallbackMsg = 'Something went wrong'
 	) => {
+		// 🌐 No response — likely network, CORS, or request setup issue
 		if (!error?.response) {
-			toast.error('Network error — please check your connection');
+			toast.error('Network error — request never reached the server');
 			return;
 		}
 
+		// ✅ We got a response, handle normally
 		const status = error.response.status;
 		const data = error.response.data || {};
 		const msg = data.message || data.error || fallbackMsg;
 		const url = error.config?.url || '';
-		console.log('comming ' + status + '  ' + data + ' ' + msg + ' ' + url);
 
 		// 🔐 Unauthorized (invalid creds or expired token)
 		if (status === 401) {
@@ -35,7 +35,6 @@ export function useApiErrorHandler() {
 				return;
 			}
 
-			// 💡 Session expired for other routes
 			toast.error('Session expired. Please log in again.');
 			logout(true);
 			return;
@@ -57,9 +56,9 @@ export function useApiErrorHandler() {
 				toast.error('Forbidden — you don’t have permission');
 				break;
 			case 404:
-				if (error.config?.url?.includes('/auth/login')) {
+				if (url.includes('/auth/login')) {
 					toast.error('Invalid username or password.');
-				} else if (error.config?.url?.includes('/auth/register')) {
+				} else if (url.includes('/auth/register')) {
 					toast.error('Username not found or unavailable.');
 				} else {
 					toast.error('The requested resource was not found.');
@@ -67,7 +66,7 @@ export function useApiErrorHandler() {
 				break;
 			case 409:
 				toast.error(
-					'A name with this value already exists. Please choose a different name'
+					'A name with this value already exists. Please choose a different name.'
 				);
 				break;
 			case 500:

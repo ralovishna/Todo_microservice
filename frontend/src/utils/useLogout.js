@@ -1,23 +1,22 @@
 // src/hooks/useLogout.js
 import { useNavigate } from 'react-router-dom';
-import { removeToken } from '../utils/storage';
 import { useAuth } from '../context/AuthContext';
+import { removeToken } from '../utils/storage';
 import toast from 'react-hot-toast';
 
 export const useLogout = () => {
 	const navigate = useNavigate();
-	const { setAuth } = useAuth ? useAuth() : {};
+	const { logout } = useAuth(); // ✅ context is now available
 
-	const logout = (soft = false) => {
+	const handleLogout = (soft = false) => {
 		console.log('🔒 useLogout triggered | soft =', soft);
 		removeToken();
-
-		if (setAuth) setAuth({ token: null, user: null });
-
+		logout(true); // call the context’s logout function
 		if (!soft) {
+			toast.success('You have been logged out.');
 			navigate('/login', { replace: true });
 		}
 	};
 
-	return logout;
+	return handleLogout;
 };

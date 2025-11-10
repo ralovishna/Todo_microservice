@@ -1,4 +1,4 @@
-import React from 'react';
+// src/pages/auth/Login.jsx
 import { useNavigate } from 'react-router-dom';
 import { API } from '../../api/endPoints';
 import AuthForm from '../../components/common/AuthForm';
@@ -11,7 +11,7 @@ export default function Login() {
 			role='login'
 			endpoint={API.AUTH.LOGIN}
 			linkTo='/register'
-			linkText='Register'
+			linkText='Sign Up'
 			mainColor='blue'
 			onSuccess={() => {}}
 		/>

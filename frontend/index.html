@@ -1,12 +1,94 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" class="light">
+
 <head>
-    <meta charset="UTF-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>frontend</title>
+    <meta charset="utf-8" />
+    <title>TodoMate</title>
+
+    <!-- ── Tailwind v4 CDN ── -->
+    <script type="module">
+        import { injectStyles } from 'https://cdn.tailwindcss.com/4.0.0';
+
+        /* 1. List EVERY file that contains Tailwind classes.
+              (Add new pages/components here) */
+        const filesToScan = [
+            './src/main.jsx',
+            './src/pages/TodoList.jsx',
+            './src/components/layout/Navbar.jsx',
+            './src/components/todos/TodoListItems.jsx',
+            './src/components/todos/TodoDateFilter.jsx',
+            './src/components/todos/TodoPagination.jsx',
+            './src/components/common/TodoModal.jsx',
+            './src/components/common/ConfirmModal.jsx',
+            // add any other .jsx/.tsx you create
+        ];
+
+        injectStyles({
+            config: {
+                content: filesToScan,        
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            background: 'var(--color-bg)',
+                            foreground: 'var(--color-fg)',
+                            card: 'var(--color-card)',
+                            border: 'var(--color-border)',
+                            primary: 'var(--color-primary)',
+                            muted: {
+                                DEFAULT: 'hsl(210 20% 95%)',
+                                foreground: 'hsl(210 20% 45%)',
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    </script>
+
+    <!-- ── CSS variables + root background (no @apply) ── -->
+    <style>
+        :root {
+            --color-bg: #ffffff;
+            --color-fg: #1f2937;
+            --color-card: #ffffff;
+            --color-border: #e5e7eb;
+            --color-primary: #2563eb;
+            --color-blue: #eff6ff;
+            --color-green: #f0fdf4;
+            --color-red: #fff1f2;
+            --color-yellow: #fefce8;
+        }
+
+        .dark {
+            --color-bg: #0f172a;
+            --color-fg: #e2e8f0;
+            --color-card: #1e293b;
+            --color-border: #334155;
+            --color-primary: #3b82f6;
+            --color-blue: #162456;
+            --color-green: #032e15;
+            --color-red: #4d0218;
+            --color-yellow: rgb(80, 81, 14);
+        }
+
+
+        html {
+            background-color: var(--color-bg);
+            color: var(--color-fg);
+        }
+
+        *,
+        *::before,
+        *::after {
+            transition: background-color .2s, color .2s, border-color .2s;
+        }
+    </style>
 </head>
+
 <body>
-<div id="root"></div>
-<script src="/src/main.jsx" type="module"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
 </body>
+
 </html>

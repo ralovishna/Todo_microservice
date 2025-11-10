@@ -22,9 +22,12 @@ const AuthForm = ({
 	const { login } = useAuth();
 	const handleApiError = useApiErrorHandler();
 
+	const isLogin = role === 'login';
+
 	const handleChange = (e) => {
-		setForm({ ...form, [e.target.name]: e.target.value });
-		setErrors({ ...errors, [e.target.name]: '' });
+		const { name, value } = e.target;
+		setForm((prev) => ({ ...prev, [name]: value }));
+		setErrors((prev) => ({ ...prev, [name]: '' }));
 	};
 
 	const handleSubmit = async (e) => {
@@ -33,22 +36,20 @@ const AuthForm = ({
 		setLoading(true);
 
 		try {
-			const res = await axiosClient.post(endpoint, form);
+			const { data } = await axiosClient.post(endpoint, form);
 
-			if (role === 'login') {
-				// AuthProvider handles navigation/toasts internally for login
-				login(res.data.token);
+			if (isLogin) {
+				login(data.token); // AuthContext handles navigation + toast
 			} else {
-				toast.success('Success!'); // Generic success toast for register
+				toast.success('Account created successfully!');
 			}
 
-			// Call the specific success function passed by Login or Register component
-			if (onSuccess) onSuccess(res.data);
+			onSuccess?.(data);
 		} catch (err) {
 			handleApiError(
 				err,
 				setErrors,
-				`${role.charAt(0).toUpperCase() + role.slice(1)} failed.`
+				`${isLogin ? 'Login' : 'Registration'} failed.`
 			);
 		} finally {
 			setLoading(false);
@@ -56,84 +57,90 @@ const AuthForm = ({
 	};
 
 	return (
-		<div className='flex justify-center items-center min-h-screen bg-gray-100'>
+		<div className='flex min-h-screen items-center justify-center bg-linear-to-br from-gray-50 to-gray-100 p-4'>
 			<form
 				onSubmit={handleSubmit}
-				className='bg-white shadow-lg rounded-2xl p-8 w-96 space-y-5'
+				className='w-full max-w-md space-y-6 rounded-2xl bg-white p-8 shadow-xl'
 			>
-				<h1 className='text-2xl font-bold text-center text-gray-800'>
-					{role.charAt(0).toUpperCase() + role.slice(1)}
+				<h1 className='text-center text-3xl font-bold text-gray-800'>
+					{isLogin ? 'Welcome Back' : 'Create Account'}
 				</h1>
 
-				{/* Username Field */}
+				{/* Username */}
 				<div>
 					<input
 						type='text'
 						name='username'
-						placeholder='Username'
+						placeholder='Enter username'
 						value={form.username}
 						onChange={handleChange}
 						required
-						className={`w-full border rounded-lg p-2 focus:ring-2 ${
-							errors.username ? 'border-red-500' : `focus:ring-${mainColor}-400`
+						disabled={loading}
+						className={`w-full rounded-lg text-gray-800 border px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 ${
+							errors.username
+								? 'border-red-500 focus:ring-red-400'
+								: `border-gray-300 focus:ring-${mainColor}-500`
 						}`}
 					/>
 					{errors.username && (
-						<p className='text-red-500 text-xs mt-1'>{errors.username}</p>
+						<p className='mt-1 text-xs text-red-500'>{errors.username}</p>
 					)}
 				</div>
 
-				{/* Password Field */}
+				{/* Password */}
 				<div className='relative'>
 					<input
 						type={showPassword ? 'text' : 'password'}
 						name='password'
-						placeholder='Password'
+						placeholder='Enter password'
 						value={form.password}
 						onChange={handleChange}
 						required
-						className={`w-full border rounded-lg p-2 pr-10 focus:ring-2 ${
-							errors.password ? 'border-red-500' : `focus:ring-${mainColor}-400`
+						disabled={loading}
+						className={`w-full rounded-lg border px-4 py-3 pr-12 text-sm transition-all focus:outline-none focus:ring-2 ${
+							errors.password
+								? 'border-red-500 focus:ring-red-400'
+								: `border-gray-300 focus:ring-${mainColor}-500`
 						}`}
 					/>
+
+					{/* Eye icon button */}
 					<button
 						type='button'
-						onClick={() => setShowPassword((prev) => !prev)}
-						className={`absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 ${
-							role == 'register' && errors.password != '' ? 'bottom-4' : ''
-						}`}
+						onClick={() => setShowPassword(!showPassword)}
+						className='absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 transition-colors bottom-5'
 						aria-label={showPassword ? 'Hide password' : 'Show password'}
 					>
 						{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
 					</button>
-					{errors.password && (
-						<p className='text-red-500 text-[11px] mt-1'>{errors.password}</p>
-					)}
+
+					{/* Error message: reserve vertical space to prevent layout shift */}
+					<p className='mt-1 text-xs text-red-500 min-h-5'>
+						{errors.password || ''}
+					</p>
 				</div>
 
-				{/* Submit Button */}
+				{/* Submit */}
 				<button
 					type='submit'
 					disabled={loading}
-					className={`w-full ${
+					className={`w-full rounded-lg py-3 font-medium transition-all active:scale-95 ${
 						loading
-							? 'bg-gray-400 cursor-not-allowed'
-							: `bg-${mainColor}-600 hover:bg-${mainColor}-700`
-					} text-white py-2 rounded-lg transition duration-150 ease-in-out`}
+							? 'cursor-not-allowed bg-gray-400 text-white'
+							: isLogin
+							? 'bg-blue-500 hover:bg-blue-600 text-white'
+							: 'bg-green-500 hover:bg-green-600 border border-gray-300'
+					}`}
 				>
-					{loading
-						? `${role.charAt(0).toUpperCase() + role.slice(1)}ing...`
-						: role.charAt(0).toUpperCase() + role.slice(1)}
+					{loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Sign Up'}
 				</button>
 
-				{/* Link to other form */}
-				<p className='text-sm text-center'>
-					{role === 'login'
-						? 'Don’t have an account?'
-						: 'Already have an account?'}{' '}
+				{/* Link */}
+				<p className='text-center text-sm text-gray-600'>
+					{isLogin ? "Don't have an account? " : 'Already have an account? '}
 					<Link
 						to={linkTo}
-						className={`text-${mainColor}-600 font-semibold hover:underline`}
+						className={`font-semibold text-${mainColor}-600 hover:underline`}
 					>
 						{linkText}
 					</Link>

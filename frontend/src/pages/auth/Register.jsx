@@ -1,4 +1,4 @@
-import React from 'react';
+// src/pages/auth/Register.jsx
 import { useNavigate } from 'react-router-dom';
 import { API } from '../../api/endPoints';
 import AuthForm from '../../components/common/AuthForm';
@@ -11,11 +11,9 @@ export default function Register() {
 			role='register'
 			endpoint={API.AUTH.REGISTER}
 			linkTo='/login'
-			linkText='Login'
-			mainColor='green'page
-			onSuccess={() => {
-				navigate('/login');
-			}}
+			linkText='Sign In'
+			mainColor='green'
+			onSuccess={() => navigate('/login')}
 		/>
 	);
 }

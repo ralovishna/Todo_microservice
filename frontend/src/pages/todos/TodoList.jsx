@@ -1,4 +1,3 @@
-// src/pages/TodoList.jsx
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { useApiErrorHandler } from '../../utils/handleApiError';
@@ -116,15 +115,15 @@ export default function TodoList() {
 	return (
 		<>
 			<Navbar onSearchChange={setSearch} />
-
+			{/* <div className='bg-card text-foreground bg-muted border-border text-primary hidden' /> */}
 			<main className='max-w-4xl mx-auto mt-8 px-4 sm:px-6 lg:px-8'>
-				<section className='bg-white rounded-2xl shadow-xl p-6 sm:p-8'>
+				<section className='bg-card rounded-2xl shadow-xl p-6 sm:p-8'>
 					{/* Header */}
 					<div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8'>
-						<h2 className='text-3xl font-bold text-gray-800'>My Todos</h2>
+						<h2 className='text-3xl font-bold text-foreground'>My Todos</h2>
 						<button
 							onClick={openAdd}
-							className='flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg font-medium'
+							className='flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-primary to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg cursor-pointer font-medium'
 						>
 							<Plus size={20} /> Add Todo
 						</button>
@@ -138,11 +137,12 @@ export default function TodoList() {
 								onClick={() => {
 									setFilter(f);
 									resetPage();
+									2;
 								}}
-								className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all ${
+								className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
 									filter === f
-										? 'bg-blue-600 text-white shadow-md'
-										: 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+										? 'bg-blue-500 text-white shadow-md'
+										: 'bg-muted hover:bg-(--color-blue) border-blue-700 border text-foreground'
 								}`}
 							>
 								{f.charAt(0).toUpperCase() + f.slice(1)}
@@ -161,15 +161,15 @@ export default function TodoList() {
 						resetPage={resetPage}
 					/>
 
-					<p className='text-xs text-gray-500 -mt-6 mb-6 ml-1'>
+					<p className='text-xs text-muted-foreground -mt-6 mb-6 ml-1'>
 						Only past and present dates are allowed
 					</p>
 
 					{/* Stats */}
 					{todos.length > 0 && (
-						<p className='text-sm font-medium text-gray-700 flex flex-wrap items-center gap-x-3 gap-y-1 mb-6'>
+						<p className='text-sm font-medium text-foreground flex flex-wrap items-center gap-x-3 gap-y-1 mb-6'>
 							{startDate || endDate ? (
-								<span className='text-blue-600'>
+								<span className='text-primary'>
 									{startDate
 										? new Date(startDate).toLocaleDateString('en-US', {
 												month: 'short',
@@ -187,11 +187,13 @@ export default function TodoList() {
 							) : (
 								<span className='text-blue-500 italic'>All time</span>
 							)}
-							<span className='text-amber-600'>{stats.pending} pending</span>
-							<span className='text-green-600'>
+							<span className='text-amber-600 dark:text-amber-400'>
+								{stats.pending} pending
+							</span>
+							<span className='text-green-600 dark:text-green-400'>
 								{stats.completed} completed
 							</span>
-							<span className='font-semibold text-gray-800'>
+							<span className='font-semibold text-foreground'>
 								{stats.total} total
 							</span>
 						</p>
@@ -200,11 +202,11 @@ export default function TodoList() {
 					{/* List / Empty */}
 					{todos.length === 0 ? (
 						<div className='text-center py-16'>
-							<div className='bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4'>
+							<div className='bg-muted w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4'>
 								<span className='text-3xl'>Empty</span>
 							</div>
-							<p className='text-gray-500 text-lg'>No todos found.</p>
-							<p className='text-sm text-gray-400 mt-1'>
+							<p className='text-muted-foreground text-lg'>No todos found.</p>
+							<p className='text-sm text-muted-foreground/70 mt-1'>
 								Create your first todo to get started!
 							</p>
 						</div>

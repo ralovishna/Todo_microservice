@@ -1,6 +1,8 @@
 package com.todo.todo_service.repo;
 
 import com.todo.todo_service.model.Todo;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,22 +16,40 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
 
     List<Todo> findByUsernameAndCompleted(String username, boolean completed);
 
+//    @Query("""
+//                SELECT t FROM Todo t
+//                WHERE t.username = :username
+//                  AND (:status = 'all'
+//                       OR (:status = 'completed' AND t.completed = TRUE)
+//                       OR (:status = 'pending' AND t.completed = FALSE))
+//                  AND (:search IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :search, '%')))
+//                  AND (:startDate IS NULL OR t.createdAt >= :startDate)
+//                  AND (:endDate IS NULL OR t.createdAt <= :endDate)
+//                ORDER BY t.createdAt DESC
+//            """)
+//    List<Todo> findByFilters(
+//            @Param("username") String username,
+//            @Param("status") String status,
+//            @Param("search") String search,
+//            @Param("startDate") OffsetDateTime startDate,
+//            @Param("endDate") OffsetDateTime endDate
+//    );
+
     @Query("""
-                SELECT t FROM Todo t
-                WHERE t.username = :username
-                  AND (:status = 'all'
-                       OR (:status = 'completed' AND t.completed = TRUE)
-                       OR (:status = 'pending' AND t.completed = FALSE))
-                  AND (:search IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :search, '%')))
-                  AND (:startDate IS NULL OR t.createdAt >= :startDate)
-                  AND (:endDate IS NULL OR t.createdAt <= :endDate)
-                ORDER BY t.createdAt DESC
-            """)
-    List<Todo> findByFilters(
+    SELECT t FROM Todo t\s
+    WHERE t.username = :username
+      AND (:status = 'all'\s
+           OR (:status = 'completed' AND t.completed = TRUE)\s
+           OR (:status = 'pending' AND t.completed = FALSE))
+      AND (:search IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :search, '%')))
+      AND (:startDate IS NULL OR t.createdAt >= :startDate)
+      AND (:endDate IS NULL OR t.createdAt <= :endDate)
+   \s""")
+    Page<Todo> findByFilters(
             @Param("username") String username,
             @Param("status") String status,
             @Param("search") String search,
             @Param("startDate") OffsetDateTime startDate,
-            @Param("endDate") OffsetDateTime endDate
-    );
+            @Param("endDate") OffsetDateTime endDate,
+            Pageable pageable);
 }

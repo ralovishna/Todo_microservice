@@ -1,18 +1,13 @@
 package com.todo.todo_service.controller;
 
 import com.todo.todo_service.generated.api.TodoApi;
-import com.todo.todo_service.generated.model.DeleteTodo200Response;
-import com.todo.todo_service.generated.model.TodoRequest;
-import com.todo.todo_service.generated.model.TodoResponse;
-import com.todo.todo_service.generated.model.ToggleTodoRequest;
+import com.todo.todo_service.generated.model.*;
 import com.todo.todo_service.service.TodoService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 public class TodoController implements TodoApi {
@@ -25,41 +20,45 @@ public class TodoController implements TodoApi {
 
     @Override
     public ResponseEntity<TodoResponse> createTodo(
-            @NotNull String xUser,
+            @jakarta.validation.constraints.NotNull String xUser,
             @Valid TodoRequest request) {
         return ResponseEntity.ok(todoService.createTodo(request, xUser));
     }
 
     @Override
-    public ResponseEntity<List<TodoResponse>> getFilteredTodos(
+    public ResponseEntity<PaginatedTodoResponse> getFilteredTodos(
             String xUser,
             String status,
             String search,
             LocalDate startDate,
-            LocalDate endDate
-    ) {
-        return ResponseEntity.ok(todoService.getFilteredTodos(xUser, status, search, startDate, endDate));
+            LocalDate endDate,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "1") Integer page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "10") Integer size) {
+
+        PaginatedTodoResponse response = todoService.getFilteredTodos(
+                xUser, status, search, startDate, endDate, page, size);
+        return ResponseEntity.ok(response);
     }
 
     @Override
     public ResponseEntity<TodoResponse> updateTodo(
-            @NotNull String xUser,
-            Integer id,
+            @jakarta.validation.constraints.NotNull String xUser,
+            Long id,
             @Valid TodoRequest request) {
         return ResponseEntity.ok(todoService.updateTodo(id, request, xUser));
     }
 
     @Override
     public ResponseEntity<TodoResponse> toggleTodo(
-            @NotNull String xUser,
-            Integer id,
+            @jakarta.validation.constraints.NotNull String xUser,
+            Long id,
             @Valid ToggleTodoRequest toggleTodoRequest) {
         Boolean completed = toggleTodoRequest.getCompleted();
         return ResponseEntity.ok(todoService.toggleTodo(id, completed, xUser));
     }
 
     @Override
-    public ResponseEntity<DeleteTodo200Response> deleteTodo(Integer id) {
+    public ResponseEntity<DeleteTodo200Response> deleteTodo(Long id) {
         todoService.deleteTodo(id);
         DeleteTodo200Response res = new DeleteTodo200Response();
         res.setMessage("Todo deleted successfully");

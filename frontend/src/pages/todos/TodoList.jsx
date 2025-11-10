@@ -124,7 +124,7 @@ export default function TodoList() {
 						<h2 className='text-3xl font-bold text-gray-800'>My Todos</h2>
 						<button
 							onClick={openAdd}
-							className='flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg font-medium'
+							className='flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg font-medium'
 						>
 							<Plus size={20} /> Add Todo
 						</button>

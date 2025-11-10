@@ -51,7 +51,7 @@ export default function TodoListItems({
 							{todo.title}
 						</p>
 						{todo.description && (
-							<p className='text-sm text-gray-600 mt-1.5 break-words whitespace-pre-wrap'>
+							<p className='text-sm text-gray-600 mt-1.5 wrap-break-word whitespace-pre-wrap'>
 								{todo.description}
 							</p>
 						)}

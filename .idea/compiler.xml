@@ -9,6 +9,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="auth-service" />
         <module name="cloud-config-server" />
+        <module name="audit-service" />
         <module name="discovery-service" />
         <module name="gateway-service" />
       </profile>
@@ -25,6 +26,7 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="audit-service" options="-parameters" />
       <module name="auth-service" options="-parameters" />
       <module name="cloud-config-server" options="-parameters" />
       <module name="discovery-service" options="-parameters" />

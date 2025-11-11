@@ -1,11 +1,16 @@
 package com.todo.todo_service.service;
 
+import com.todo.todo_service.generated.model.PaginatedTodoResponse;
+import com.todo.todo_service.generated.model.TodoRequest;
+import com.todo.todo_service.generated.model.TodoResponse;
 import com.todo.todo_service.model.Todo;
 import com.todo.todo_service.repo.TodoRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import com.todo.todo_service.generated.model.*;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;

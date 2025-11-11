@@ -1,0 +1,15 @@
+<configuration>
+    <springProperty name="APP_NAME" source="spring.application.name" defaultValue="unknown"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{HH:mm:ss.SSS} [${APP_NAME}] traceId=%X{traceId:-} spanId=%X{spanId:-} %-5level %logger{10} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

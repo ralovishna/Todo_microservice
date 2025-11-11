@@ -36,15 +36,15 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
 //    );
 
     @Query("""
-    SELECT t FROM Todo t\s
-    WHERE t.username = :username
-      AND (:status = 'all'\s
-           OR (:status = 'completed' AND t.completed = TRUE)\s
-           OR (:status = 'pending' AND t.completed = FALSE))
-      AND (:search IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :search, '%')))
-      AND (:startDate IS NULL OR t.createdAt >= :startDate)
-      AND (:endDate IS NULL OR t.createdAt <= :endDate)
-   \s""")
+             SELECT t FROM Todo t\s
+             WHERE t.username = :username
+               AND (:status = 'all'\s
+                    OR (:status = 'completed' AND t.completed = TRUE)\s
+                    OR (:status = 'pending' AND t.completed = FALSE))
+               AND (:search IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :search, '%')))
+               AND (:startDate IS NULL OR t.createdAt >= :startDate)
+               AND (:endDate IS NULL OR t.createdAt <= :endDate)
+            \s""")
     Page<Todo> findByFilters(
             @Param("username") String username,
             @Param("status") String status,
